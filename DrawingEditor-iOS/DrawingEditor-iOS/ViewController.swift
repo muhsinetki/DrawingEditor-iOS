@@ -7,25 +7,100 @@
 
 import UIKit
 
+enum Shape {
+    case CIRCLE , RECTANGLE , LINE
+}
+
 class ViewController: UIViewController {
+    @IBOutlet weak var shapeLabel: UILabel!
+    @IBOutlet weak var colorLabel: UILabel!
+    @IBOutlet weak var openPickerViewButton: UIButton!
+    @IBOutlet weak var doneButton: UIButton!
+    @IBOutlet weak var eraseButton: UIButton!
+    @IBOutlet weak var createButton: UIButton!
+
     var rectangles: [Rectangle] = []
+    var circles: [CircleView] = []
+    var shapes:[String] = ["Circle","Rectangle","Line"]
+    var colors:[String] = ["red","blue","green"]
+    var pickerData:[[String]] = []
+    
+    var currentColor:UIColor = .red
+    var currentShape:Shape = .CIRCLE
+    
+    @IBOutlet weak var shapePickerView: UIPickerView!
+    
+    
     override func viewDidLoad() {
         super.viewDidLoad()
+        pickerData = [shapes,colors]
+        shapePickerView.dataSource = self
+        shapePickerView.delegate = self
+        
+        updateCurrentStyleLabel()
+        
         view.addGestureRecognizer(UIPanGestureRecognizer(target: self, action: #selector(pan)))
+    }
+    
+    func updateCurrentStyleLabel()  {
+        shapeLabel.text = "Shape: \(currentShape)"
+        colorLabel.text = "Color:  \(currentColor.accessibilityName.uppercased().components(separatedBy: " ").last ?? "")"
+    }
+    
+    @IBAction func createButtonPressed(_ sender: UIButton) {
+        eraseButton.backgroundColor = .lightGray
+        createButton.backgroundColor = #colorLiteral(red: 0.3764705882, green: 0.8196078431, blue: 0.9137254902, alpha: 1)
+    }
+    
+    @IBAction func eraseButtonPressed(_ sender: UIButton) {
+        createButton.backgroundColor = .lightGray
+        eraseButton.backgroundColor = #colorLiteral(red: 0.3764705882, green: 0.8196078431, blue: 0.9137254902, alpha: 1)
+    }
+    
+    @IBAction func openPickerViewButtonPressed(_ sender: UIButton) {
+        doneButton.isHidden = false
+        shapePickerView.isHidden = false
+    }
+    
+    @IBAction func doneButtonPressed(_ sender: UIButton) {
+        doneButton.isHidden = true
+        shapePickerView.isHidden = true
     }
     @objc func pan(_ gesture: UIPanGestureRecognizer) {
         switch gesture.state {
         case .began:
-            let rectangle = Rectangle(frame: .init(origin: gesture.location(in: view), size: .init(width: 0, height: 0)))
-            rectangle.color = .blue
-            view.addSubview(rectangle)
-            rectangles.append(rectangle)
+            switch currentShape {
+            case .CIRCLE:
+                let circle = CircleView(frame: .init(origin: gesture.location(in: view), size: .init(width: 0, height: 0)))
+                circle.fillColor = currentColor
+                view.addSubview(circle)
+                circles.append(circle)
+            case .RECTANGLE:
+                let rectangle = Rectangle(frame: .init(origin: gesture.location(in: view), size: .init(width: 0, height: 0)))
+                rectangle.color = currentColor
+                view.addSubview(rectangle)
+                rectangles.append(rectangle)
+            case .LINE:
+                print("")
+            }
+            
         case .changed:
             let distance = gesture.translation(in: view)
-            let index = rectangles.index(before: rectangles.endIndex)
-            let frame = rectangles[index].frame
-            rectangles[index].frame = .init(origin: frame.origin, size: .init(width: frame.width + distance.x, height: frame.height + distance.y))
-            rectangles[index].setNeedsDisplay()
+            
+            switch currentShape {
+            case .CIRCLE:
+                let indexC = circles.index(before: circles.endIndex)
+                let frameC = circles[indexC].frame
+                circles[indexC].frame = .init(x: frameC.origin.x, y: frameC.origin.y, width: frameC.width+distance.x, height: frameC.height+distance.y)
+                circles[indexC].setNeedsDisplay()
+            case .RECTANGLE:
+                let index = rectangles.index(before: rectangles.endIndex)
+                let frame = rectangles[index].frame
+                rectangles[index].frame = .init(origin: frame.origin, size: .init(width: frame.width + distance.x, height: frame.height + distance.y))
+                rectangles[index].setNeedsDisplay()
+            case .LINE:
+                print("")
+            }
             gesture.setTranslation(.zero, in: view)
         case .ended:
             break
@@ -34,9 +109,44 @@ class ViewController: UIViewController {
         }
     }
 }
+extension ViewController : UIPickerViewDataSource {
+    func numberOfComponents(in pickerView: UIPickerView) -> Int {
+        return 2
+    }
+    
+    func pickerView(_ pickerView: UIPickerView, numberOfRowsInComponent component: Int) -> Int {
+        return shapes.count
+    }
+}
+extension ViewController: UIPickerViewDelegate{
+    func pickerView(_ pickerView: UIPickerView, titleForRow row: Int, forComponent component: Int) -> String? {
+        return pickerData[component][row]
+    }
+    func pickerView(_ pickerView: UIPickerView, didSelectRow row: Int, inComponent component: Int) {
+        if component == 0 {
+            if row == 0 {
+                currentShape = .CIRCLE
+            }else if row == 1 {
+                currentShape = .RECTANGLE
+            }else {
+                currentShape = .LINE
+            }
+        }else {
+            if row == 0 {
+                currentColor = .red
+            }else if row == 1 {
+                currentColor = .blue
+            }else {
+                currentColor = .green
+            }
+        }
+        updateCurrentStyleLabel()
+    }
+}
+
 @IBDesignable
 class Rectangle: UIView {
-
+    
     @IBInspectable var color: UIColor = .clear {
         didSet { backgroundColor = color }
     }
@@ -61,6 +171,30 @@ extension CGPoint {
     static func +=(lhs: inout CGPoint, rhs: CGPoint) {
         lhs.x += rhs.x
         lhs.y += rhs.y
+    }
+}
+
+@IBDesignable
+class CircleView: UIView {
+    @IBInspectable var fillColor: UIColor = .clear {
+        didSet { fillColor.setFill() }
+    }
+    
+    override func draw(_ rect: CGRect) {
+        backgroundColor = .clear
+        fillColor.set()
+        UIBezierPath(ovalIn: rect).fill()
+    }
+    // add the gesture recognizer to your view
+    override func didMoveToSuperview() {
+        addGestureRecognizer(UIPanGestureRecognizer(target: self, action: #selector(pan)))
+    }
+    // your gesture selector
+    @objc func pan(_ gesture: UIPanGestureRecognizer) {
+        //  update your view frame origin
+        frame.origin += gesture.translation(in: self)
+        // reset the gesture translation
+        gesture.setTranslation(.zero, in: self)
     }
 }
 
