@@ -20,7 +20,9 @@ class ViewController: UIViewController {
     @IBOutlet weak var createButton: UIButton!
 
     var rectangles: [Rectangle] = []
-    var circles: [CircleView] = []
+    var circles: [Circle] = []
+    var lines:[Line] = []
+    
     var shapes:[String] = ["Circle","Rectangle","Line"]
     var colors:[String] = ["red","blue","green"]
     var pickerData:[[String]] = []
@@ -71,7 +73,7 @@ class ViewController: UIViewController {
         case .began:
             switch currentShape {
             case .CIRCLE:
-                let circle = CircleView(frame: .init(origin: gesture.location(in: view), size: .init(width: 0, height: 0)))
+                let circle = Circle(frame: .init(origin: gesture.location(in: view), size: .init(width: 0, height: 0)))
                 circle.fillColor = currentColor
                 view.addSubview(circle)
                 circles.append(circle)
@@ -81,25 +83,30 @@ class ViewController: UIViewController {
                 view.addSubview(rectangle)
                 rectangles.append(rectangle)
             case .LINE:
-                print("")
+                let line = Line(frame: .init(origin: gesture.location(in: view), size: .init(width: 0, height: 0)))
+                line.fillColor = currentColor
+                view.addSubview(line)
+                lines.append(line)
             }
-            
         case .changed:
             let distance = gesture.translation(in: view)
             
             switch currentShape {
             case .CIRCLE:
-                let indexC = circles.index(before: circles.endIndex)
-                let frameC = circles[indexC].frame
-                circles[indexC].frame = .init(x: frameC.origin.x, y: frameC.origin.y, width: frameC.width+distance.x, height: frameC.height+distance.y)
-                circles[indexC].setNeedsDisplay()
+                let index = circles.index(before: circles.endIndex)
+                let frame = circles[index].frame
+                circles[index].frame = .init(x: frame.origin.x, y: frame.origin.y, width: frame.width+distance.x, height: frame.height+distance.y)
+                circles[index].setNeedsDisplay()
             case .RECTANGLE:
                 let index = rectangles.index(before: rectangles.endIndex)
                 let frame = rectangles[index].frame
                 rectangles[index].frame = .init(origin: frame.origin, size: .init(width: frame.width + distance.x, height: frame.height + distance.y))
                 rectangles[index].setNeedsDisplay()
             case .LINE:
-                print("")
+                let index = lines.index(before: lines.endIndex)
+                let frame = lines[index].frame
+                lines[index].frame = .init(x: frame.origin.x, y: frame.origin.y, width: frame.width+distance.x, height: frame.height+distance.y)
+                lines[index].setNeedsDisplay()
             }
             gesture.setTranslation(.zero, in: view)
         case .ended:
@@ -175,7 +182,7 @@ extension CGPoint {
 }
 
 @IBDesignable
-class CircleView: UIView {
+class Circle: UIView {
     @IBInspectable var fillColor: UIColor = .clear {
         didSet { fillColor.setFill() }
     }
@@ -198,3 +205,29 @@ class CircleView: UIView {
     }
 }
 
+@IBDesignable
+class Line: UIView {
+    @IBInspectable var fillColor: UIColor = .clear {
+        didSet { fillColor.setFill() }
+    }
+    
+    override func draw(_ rect: CGRect) {
+        backgroundColor = .clear
+        let path = UIBezierPath()
+        path.move(to: CGPoint(x: rect.minX, y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
+        fillColor.set()
+        path.stroke()
+    }
+    // add the gesture recognizer to your view
+    override func didMoveToSuperview() {
+        addGestureRecognizer(UIPanGestureRecognizer(target: self, action: #selector(pan)))
+    }
+    // your gesture selector
+    @objc func pan(_ gesture: UIPanGestureRecognizer) {
+        //  update your view frame origin
+        frame.origin += gesture.translation(in: self)
+        // reset the gesture translation
+        gesture.setTranslation(.zero, in: self)
+    }
+}
