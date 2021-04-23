@@ -8,7 +8,7 @@
 import UIKit
 
 enum Shape {
-    case CIRCLE , RECTANGLE , LINE
+    case CIRCLE , RECTANGLE ,SQUARE , LINE
 }
 
 enum Mode {
@@ -24,10 +24,11 @@ class ViewController: UIViewController {
     @IBOutlet weak var createButton: UIButton!
     
     var rectangles: [Rectangle] = []
+    var squares: [Square] = []
     var circles: [Circle] = []
     var lines:[Line] = []
     
-    var shapes:[String] = ["Circle","Rectangle","Line"]
+    var shapes:[String] = ["Circle","Rectangle","Square","Line"]
     var colors:[String] = ["Red","Blue","Green","Transparent"]
     var pickerData:[[String]] = []
     
@@ -64,6 +65,9 @@ class ViewController: UIViewController {
         rectangles.forEach { (rectangle) in
             rectangle.mode = .create
         }
+        squares.forEach { (square) in
+            square.mode = .create
+        }
         lines.forEach { (line) in
             line.mode = .create
         }
@@ -78,6 +82,9 @@ class ViewController: UIViewController {
         }
         rectangles.forEach { (rectangle) in
             rectangle.mode = .erase
+        }
+        squares.forEach { (square) in
+            square.mode = .erase
         }
         lines.forEach { (line) in
             line.mode = .erase
@@ -108,6 +115,11 @@ class ViewController: UIViewController {
                     rectangle.color = currentColor
                     view.addSubview(rectangle)
                     rectangles.append(rectangle)
+                case .SQUARE:
+                    let square = Square(frame: .init(origin: gesture.location(in: view), size: .init(width: 0, height: 0)))
+                    square.color = currentColor
+                    view.addSubview(square)
+                    squares.append(square)
                 case .LINE:
                     let line = Line(frame: .init(origin: gesture.location(in: view), size: .init(width: 0, height: 0)))
                     line.fillColor = currentColor
@@ -128,6 +140,11 @@ class ViewController: UIViewController {
                     let frame = rectangles[index].frame
                     rectangles[index].frame = .init(origin: frame.origin, size: .init(width: frame.width + distance.x, height: frame.height + distance.y))
                     rectangles[index].setNeedsDisplay()
+                case .SQUARE:
+                    let index = squares.index(before: squares.endIndex)
+                    let frame = squares[index].frame
+                    squares[index].frame = .init(origin: frame.origin, size: .init(width: frame.width + distance.x, height: frame.width + distance.x))
+                    squares[index].setNeedsDisplay()
                 case .LINE:
                     let index = lines.index(before: lines.endIndex)
                     let frame = lines[index].frame
@@ -162,7 +179,9 @@ extension ViewController: UIPickerViewDelegate{
                 currentShape = .CIRCLE
             }else if row == 1 {
                 currentShape = .RECTANGLE
-            }else {
+            }else if row == 2{
+                currentShape = .SQUARE
+            }else{
                 currentShape = .LINE
             }
         }else {
@@ -218,6 +237,47 @@ class Rectangle: UIView {
         gesture.setTranslation(.zero, in: self)
     }
 }
+
+@IBDesignable
+class Square: UIView {
+    
+    @IBInspectable var color: UIColor = .clear {
+        didSet { backgroundColor = color }
+    }
+    var mode:Mode = .create
+    
+    
+    // draw your view using the background color
+    override func draw(_ rect: CGRect) {
+        if color.isEqual(UIColor.clear){
+            UIColor.black.set()
+            backgroundColor = .clear
+            UIBezierPath(rect: rect).stroke()
+        }else{
+            backgroundColor?.set()
+            UIBezierPath(rect: rect).fill()
+        }
+    }
+    // add the gesture recognizer to your view
+    override func didMoveToSuperview() {
+        addGestureRecognizer(UIPanGestureRecognizer(target: self, action: #selector(pan)))
+        addGestureRecognizer( UITapGestureRecognizer(target: self, action: #selector(self.handleTap(_:))))
+    }
+    @objc func handleTap(_ sender: UITapGestureRecognizer? = nil) {
+        if mode == .erase {
+            self.removeFromSuperview()
+        }
+    }
+    // your gesture selector
+    @objc func pan(_ gesture: UIPanGestureRecognizer) {
+        //  update your view frame origin
+        frame.origin += gesture.translation(in: self)
+        // reset the gesture translation
+        gesture.setTranslation(.zero, in: self)
+    }
+}
+
+
 extension CGPoint {
     static func +=(lhs: inout CGPoint, rhs: CGPoint) {
         lhs.x += rhs.x
