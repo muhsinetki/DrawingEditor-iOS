@@ -11,6 +11,10 @@ enum Shape {
     case CIRCLE , RECTANGLE , LINE
 }
 
+enum Mode {
+    case create , erase
+}
+
 class ViewController: UIViewController {
     @IBOutlet weak var shapeLabel: UILabel!
     @IBOutlet weak var colorLabel: UILabel!
@@ -18,7 +22,7 @@ class ViewController: UIViewController {
     @IBOutlet weak var doneButton: UIButton!
     @IBOutlet weak var eraseButton: UIButton!
     @IBOutlet weak var createButton: UIButton!
-
+    
     var rectangles: [Rectangle] = []
     var circles: [Circle] = []
     var lines:[Line] = []
@@ -29,6 +33,7 @@ class ViewController: UIViewController {
     
     var currentColor:UIColor = .red
     var currentShape:Shape = .CIRCLE
+    var currentMode:Mode = .create
     
     @IBOutlet weak var shapePickerView: UIPickerView!
     
@@ -52,11 +57,31 @@ class ViewController: UIViewController {
     @IBAction func createButtonPressed(_ sender: UIButton) {
         eraseButton.backgroundColor = .lightGray
         createButton.backgroundColor = #colorLiteral(red: 0.3764705882, green: 0.8196078431, blue: 0.9137254902, alpha: 1)
+        currentMode = .create
+        circles.forEach { (circle) in
+            circle.mode = .create
+        }
+        rectangles.forEach { (rectangle) in
+            rectangle.mode = .create
+        }
+        lines.forEach { (line) in
+            line.mode = .create
+        }
     }
     
     @IBAction func eraseButtonPressed(_ sender: UIButton) {
         createButton.backgroundColor = .lightGray
         eraseButton.backgroundColor = #colorLiteral(red: 0.3764705882, green: 0.8196078431, blue: 0.9137254902, alpha: 1)
+        currentMode = .erase
+        circles.forEach { (circle) in
+            circle.mode = .erase
+        }
+        rectangles.forEach { (rectangle) in
+            rectangle.mode = .erase
+        }
+        lines.forEach { (line) in
+            line.mode = .erase
+        }
     }
     
     @IBAction func openPickerViewButtonPressed(_ sender: UIButton) {
@@ -69,50 +94,52 @@ class ViewController: UIViewController {
         shapePickerView.isHidden = true
     }
     @objc func pan(_ gesture: UIPanGestureRecognizer) {
-        switch gesture.state {
-        case .began:
-            switch currentShape {
-            case .CIRCLE:
-                let circle = Circle(frame: .init(origin: gesture.location(in: view), size: .init(width: 0, height: 0)))
-                circle.fillColor = currentColor
-                view.addSubview(circle)
-                circles.append(circle)
-            case .RECTANGLE:
-                let rectangle = Rectangle(frame: .init(origin: gesture.location(in: view), size: .init(width: 0, height: 0)))
-                rectangle.color = currentColor
-                view.addSubview(rectangle)
-                rectangles.append(rectangle)
-            case .LINE:
-                let line = Line(frame: .init(origin: gesture.location(in: view), size: .init(width: 0, height: 0)))
-                line.fillColor = currentColor
-                view.addSubview(line)
-                lines.append(line)
+        if currentMode == .create {
+            switch gesture.state {
+            case .began:
+                switch currentShape {
+                case .CIRCLE:
+                    let circle = Circle(frame: .init(origin: gesture.location(in: view), size: .init(width: 0, height: 0)))
+                    circle.fillColor = currentColor
+                    view.addSubview(circle)
+                    circles.append(circle)
+                case .RECTANGLE:
+                    let rectangle = Rectangle(frame: .init(origin: gesture.location(in: view), size: .init(width: 0, height: 0)))
+                    rectangle.color = currentColor
+                    view.addSubview(rectangle)
+                    rectangles.append(rectangle)
+                case .LINE:
+                    let line = Line(frame: .init(origin: gesture.location(in: view), size: .init(width: 0, height: 0)))
+                    line.fillColor = currentColor
+                    view.addSubview(line)
+                    lines.append(line)
+                }
+            case .changed:
+                let distance = gesture.translation(in: view)
+                
+                switch currentShape {
+                case .CIRCLE:
+                    let index = circles.index(before: circles.endIndex)
+                    let frame = circles[index].frame
+                    circles[index].frame = .init(x: frame.origin.x, y: frame.origin.y, width: frame.width+distance.x, height: frame.height+distance.y)
+                    circles[index].setNeedsDisplay()
+                case .RECTANGLE:
+                    let index = rectangles.index(before: rectangles.endIndex)
+                    let frame = rectangles[index].frame
+                    rectangles[index].frame = .init(origin: frame.origin, size: .init(width: frame.width + distance.x, height: frame.height + distance.y))
+                    rectangles[index].setNeedsDisplay()
+                case .LINE:
+                    let index = lines.index(before: lines.endIndex)
+                    let frame = lines[index].frame
+                    lines[index].frame = .init(x: frame.origin.x, y: frame.origin.y, width: frame.width+distance.x, height: frame.height+distance.y)
+                    lines[index].setNeedsDisplay()
+                }
+                gesture.setTranslation(.zero, in: view)
+            case .ended:
+                break
+            default:
+                break
             }
-        case .changed:
-            let distance = gesture.translation(in: view)
-            
-            switch currentShape {
-            case .CIRCLE:
-                let index = circles.index(before: circles.endIndex)
-                let frame = circles[index].frame
-                circles[index].frame = .init(x: frame.origin.x, y: frame.origin.y, width: frame.width+distance.x, height: frame.height+distance.y)
-                circles[index].setNeedsDisplay()
-            case .RECTANGLE:
-                let index = rectangles.index(before: rectangles.endIndex)
-                let frame = rectangles[index].frame
-                rectangles[index].frame = .init(origin: frame.origin, size: .init(width: frame.width + distance.x, height: frame.height + distance.y))
-                rectangles[index].setNeedsDisplay()
-            case .LINE:
-                let index = lines.index(before: lines.endIndex)
-                let frame = lines[index].frame
-                lines[index].frame = .init(x: frame.origin.x, y: frame.origin.y, width: frame.width+distance.x, height: frame.height+distance.y)
-                lines[index].setNeedsDisplay()
-            }
-            gesture.setTranslation(.zero, in: view)
-        case .ended:
-            break
-        default:
-            break
         }
     }
 }
@@ -159,6 +186,9 @@ class Rectangle: UIView {
     @IBInspectable var color: UIColor = .clear {
         didSet { backgroundColor = color }
     }
+    var mode:Mode = .create
+    
+    
     // draw your view using the background color
     override func draw(_ rect: CGRect) {
         if color.isEqual(UIColor.clear){
@@ -173,6 +203,12 @@ class Rectangle: UIView {
     // add the gesture recognizer to your view
     override func didMoveToSuperview() {
         addGestureRecognizer(UIPanGestureRecognizer(target: self, action: #selector(pan)))
+        addGestureRecognizer( UITapGestureRecognizer(target: self, action: #selector(self.handleTap(_:))))
+    }
+    @objc func handleTap(_ sender: UITapGestureRecognizer? = nil) {
+        if mode == .erase {
+            self.removeFromSuperview()
+        }
     }
     // your gesture selector
     @objc func pan(_ gesture: UIPanGestureRecognizer) {
@@ -194,6 +230,7 @@ class Circle: UIView {
     @IBInspectable var fillColor: UIColor = .clear {
         didSet { fillColor.setFill() }
     }
+    var mode:Mode = .create
     
     override func draw(_ rect: CGRect) {
         backgroundColor = .clear
@@ -210,6 +247,12 @@ class Circle: UIView {
     // add the gesture recognizer to your view
     override func didMoveToSuperview() {
         addGestureRecognizer(UIPanGestureRecognizer(target: self, action: #selector(pan)))
+        addGestureRecognizer( UITapGestureRecognizer(target: self, action: #selector(self.handleTap(_:))))
+    }
+    @objc func handleTap(_ sender: UITapGestureRecognizer? = nil) {
+        if mode == .erase {
+            self.removeFromSuperview()
+        }
     }
     // your gesture selector
     @objc func pan(_ gesture: UIPanGestureRecognizer) {
@@ -225,6 +268,7 @@ class Line: UIView {
     @IBInspectable var fillColor: UIColor = .clear {
         didSet { fillColor.setFill() }
     }
+    var mode:Mode = .create
     
     override func draw(_ rect: CGRect) {
         backgroundColor = .clear
@@ -237,6 +281,12 @@ class Line: UIView {
     // add the gesture recognizer to your view
     override func didMoveToSuperview() {
         addGestureRecognizer(UIPanGestureRecognizer(target: self, action: #selector(pan)))
+        addGestureRecognizer( UITapGestureRecognizer(target: self, action: #selector(self.handleTap(_:))))
+    }
+    @objc func handleTap(_ sender: UITapGestureRecognizer? = nil) {
+        if mode == .erase {
+            self.removeFromSuperview()
+        }
     }
     // your gesture selector
     @objc func pan(_ gesture: UIPanGestureRecognizer) {
