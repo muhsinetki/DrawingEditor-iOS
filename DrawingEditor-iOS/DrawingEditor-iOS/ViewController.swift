@@ -24,7 +24,7 @@ class ViewController: UIViewController {
     var lines:[Line] = []
     
     var shapes:[String] = ["Circle","Rectangle","Line"]
-    var colors:[String] = ["red","blue","green"]
+    var colors:[String] = ["Red","Blue","Green","Transparent"]
     var pickerData:[[String]] = []
     
     var currentColor:UIColor = .red
@@ -122,7 +122,7 @@ extension ViewController : UIPickerViewDataSource {
     }
     
     func pickerView(_ pickerView: UIPickerView, numberOfRowsInComponent component: Int) -> Int {
-        return shapes.count
+        return pickerData[component].count
     }
 }
 extension ViewController: UIPickerViewDelegate{
@@ -143,8 +143,10 @@ extension ViewController: UIPickerViewDelegate{
                 currentColor = .red
             }else if row == 1 {
                 currentColor = .blue
-            }else {
+            }else if row == 2{
                 currentColor = .green
+            }else {
+                currentColor = .clear
             }
         }
         updateCurrentStyleLabel()
@@ -159,8 +161,14 @@ class Rectangle: UIView {
     }
     // draw your view using the background color
     override func draw(_ rect: CGRect) {
-        backgroundColor?.set()
-        UIBezierPath(rect: rect).fill()
+        if color.isEqual(UIColor.clear){
+            UIColor.black.set()
+            backgroundColor = .clear
+            UIBezierPath(rect: rect).stroke()
+        }else{
+            backgroundColor?.set()
+            UIBezierPath(rect: rect).fill()
+        }
     }
     // add the gesture recognizer to your view
     override func didMoveToSuperview() {
@@ -190,7 +198,14 @@ class Circle: UIView {
     override func draw(_ rect: CGRect) {
         backgroundColor = .clear
         fillColor.set()
-        UIBezierPath(ovalIn: rect).fill()
+        if fillColor.isEqual(UIColor.clear){
+            UIColor.black.set()
+            backgroundColor = .clear
+            UIBezierPath(ovalIn: rect).stroke()
+        }else{
+            UIBezierPath(ovalIn: rect).fill()
+        }
+        
     }
     // add the gesture recognizer to your view
     override func didMoveToSuperview() {
