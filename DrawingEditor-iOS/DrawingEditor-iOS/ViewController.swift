@@ -23,10 +23,10 @@ class ViewController: UIViewController {
     @IBOutlet weak var eraseButton: UIButton!
     @IBOutlet weak var createButton: UIButton!
     
-    var rectangles: [Rectangle] = []
-    var squares: [Square] = []
-    var circles: [Circle] = []
-    var lines:[Line] = []
+    var rectangles: [Shapes] = []
+    var squares: [Shapes] = []
+    var circles: [Shapes] = []
+    var lines:[Shapes] = []
     
     var shapes:[String] = ["Circle","Rectangle","Square","Line"]
     var colors:[String] = ["Red","Blue","Green","Transparent"]
@@ -106,23 +106,27 @@ class ViewController: UIViewController {
             case .began:
                 switch currentShape {
                 case .CIRCLE:
-                    let circle = Circle(frame: .init(origin: gesture.location(in: view), size: .init(width: 0, height: 0)))
-                    circle.fillColor = currentColor
+                    let circle = Shapes(frame: .init(origin: gesture.location(in: view), size: .init(width: 0, height: 0)))
+                    circle.color = currentColor
+                    circle.type = .CIRCLE
                     view.addSubview(circle)
                     circles.append(circle)
                 case .RECTANGLE:
-                    let rectangle = Rectangle(frame: .init(origin: gesture.location(in: view), size: .init(width: 0, height: 0)))
+                    let rectangle = Shapes(frame: .init(origin: gesture.location(in: view), size: .init(width: 0, height: 0)))
                     rectangle.color = currentColor
+                    rectangle.type = .RECTANGLE
                     view.addSubview(rectangle)
                     rectangles.append(rectangle)
                 case .SQUARE:
-                    let square = Square(frame: .init(origin: gesture.location(in: view), size: .init(width: 0, height: 0)))
+                    let square = Shapes(frame: .init(origin: gesture.location(in: view), size: .init(width: 0, height: 0)))
                     square.color = currentColor
+                    square.type = .SQUARE
                     view.addSubview(square)
                     squares.append(square)
                 case .LINE:
-                    let line = Line(frame: .init(origin: gesture.location(in: view), size: .init(width: 0, height: 0)))
-                    line.fillColor = currentColor
+                    let line = Shapes(frame: .init(origin: gesture.location(in: view), size: .init(width: 0, height: 0)))
+                    line.color = currentColor
+                    line.type = .LINE
                     view.addSubview(line)
                     lines.append(line)
                 }
